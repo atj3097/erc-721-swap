@@ -22,6 +22,9 @@ contract NFTSwap is ERC721Holder {
     uint256 public swapId;
     mapping (address => bool) public deposited;
 
+    event SwapCreated(uint256 swapId, address nftAddress1, uint256 tokenId1, address nftAddress2, uint256 tokenId2, address party1, address party2, uint256 creationTime);
+    event NFTDeposited(uint256 swapId, address nftAddress, uint256 tokenId);
+
     modifier hasDeposited(uint256 _swapId) {
         Swap memory swap = swaps[_swapId];
         IERC721 nftOne = IERC721(swap.nftAddress1);
@@ -35,20 +38,23 @@ contract NFTSwap is ERC721Holder {
         Swap memory newSwap = Swap(_nftAddress1, _tokenId1, _nftAddress2, _tokenId2, _party1, _party2, block.timestamp);
         swaps[swapId] = newSwap;
         swapId++;
+        emit SwapCreated(swapId, _nftAddress1, _tokenId1, _nftAddress2, _tokenId2, _party1, _party2, block.timestamp);
     }
 
-    function depositNftOne(uint256 _swapId) public {
+    function depositNft(uint256 _swapId, address nft) public {
+        require(nft == swaps[_swapId].nftAddress1 || nft == swaps[_swapId].nftAddress2, "Wrong NFT");
         Swap memory swap = swaps[_swapId];
-        IERC721 nftOne = IERC721(swap.nftAddress1);
-        nftOne.safeTransferFrom(msg.sender, address(this), swap.tokenId1);
-        deposited[swap.party1] = true;
-    }
-
-    function depositNftTwo(uint256 _swapId) public {
-        Swap memory swap = swaps[_swapId];
-        IERC721 nftTwo = IERC721(swap.nftAddress2);
-        nftTwo.safeTransferFrom(msg.sender, address(this), swap.tokenId2);
-        deposited[swap.party2] = true;
+        if (nft == swap.nftAddress1) {
+            IERC721 nftOne = IERC721(nft);
+            nftOne.safeTransferFrom(msg.sender, address(this), swap.tokenId1);
+            deposited[swap.party1] = true;
+            emit NFTDeposited(_swapId, nft, swap.tokenId1);
+        } else {
+            IERC721 nftTwo = IERC721(nft);
+            nftTwo.safeTransferFrom(msg.sender, address(this), swap.tokenId2);
+            deposited[swap.party2] = true;
+            emit NFTDeposited(_swapId, nft, swap.tokenId2);
+        }
     }
 
     function conductSwap(uint256 _swapId) public hasDeposited(_swapId) {
