@@ -5,4 +5,9 @@ import "lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721URISt
 
 contract NFTTwo is ERC721URIStorage {
     constructor() ERC721("GameItemTwo", "ITM2") {}
+
+    function mint(address to, uint256 tokenId) public {
+        _mint(to, tokenId);
+        _setTokenURI(tokenId, "Your token URI here");
+    }
 }
