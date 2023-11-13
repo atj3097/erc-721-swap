@@ -20,6 +20,7 @@ contract NFTSwap is ERC721Holder {
 
     mapping (uint256 => Swap) public swaps;
     uint256 public swapId;
+    mapping (address => bool) public deposited;
 
     modifier hasDeposited(uint256 _swapId) {
         Swap memory swap = swaps[_swapId];
@@ -30,7 +31,7 @@ contract NFTSwap is ERC721Holder {
         _;
     }
 
-    function createSwap(address _nftAddress1, address _tokenId1, address _nftAddress2, address _tokenId2, address _party1, address _party2) public {
+    function createSwap(address _nftAddress1, uint256 _tokenId1, address _nftAddress2, uint256 _tokenId2, address _party1, address _party2) public {
         Swap memory newSwap = Swap(_nftAddress1, _tokenId1, _nftAddress2, _tokenId2, _party1, _party2, block.timestamp);
         swaps[swapId] = newSwap;
         swapId++;
@@ -40,12 +41,14 @@ contract NFTSwap is ERC721Holder {
         Swap memory swap = swaps[_swapId];
         IERC721 nftOne = IERC721(swap.nftAddress1);
         nftOne.safeTransferFrom(msg.sender, address(this), swap.tokenId1);
+        deposited[swap.party1] = true;
     }
 
     function depositNftTwo(uint256 _swapId) public {
         Swap memory swap = swaps[_swapId];
         IERC721 nftTwo = IERC721(swap.nftAddress2);
         nftTwo.safeTransferFrom(msg.sender, address(this), swap.tokenId2);
+        deposited[swap.party2] = true;
     }
 
     function conductSwap(uint256 _swapId) public hasDeposited(_swapId) {
